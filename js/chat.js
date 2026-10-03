@@ -1,472 +1,207 @@
-/**
- * AI Learning Tutor Chatbot - Frontend Client Logic
- * Handles SSE Streaming, Session Management, Markdown Rendering, and Code Highlighting.
- */
-
-let currentSessionId = null;
-let isStreaming = false;
-
-// Configure Marked.js with Highlight.js
-if (typeof marked !== 'undefined') {
-    marked.setOptions({
-        highlight: function(code, lang) {
-            if (typeof hljs !== 'undefined') {
-                if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return hljs.highlight(code, { language: lang }).value;
-                    } catch (err) {}
-                }
-                try {
-                    return hljs.highlightAuto(code).value;
-                } catch (err) {}
-            }
-            return code;
-        },
-        breaks: true,
-        gfm: true
-    });
-}
-
-// Initialize on DOM load
+/** Chat sessions, existing SSE API, and sanitized answer presentation. */
+let currentSessionId = null, isStreaming = false, sessionRequestId = 0, selectionRequestId = 0;
 document.addEventListener('DOMContentLoaded', () => {
-    setupNavbar(true);
-    loadSessions();
-    const input = document.getElementById('chatInput');
-    if (input) {
-        input.focus();
-    }
-});
-
-// Auto-resize textarea
-function autoResizeTextarea(textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
-    
-    // Update char counter
-    const counter = document.getElementById('charCounter');
-    if (counter) {
-        counter.innerText = `${textarea.value.length}/2000`;
-    }
-}
-
-// Handle Enter key (Shift+Enter for newline)
-function handleKeyDown(event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        document.getElementById('chatForm').dispatchEvent(new Event('submit'));
-    }
-}
-
-// Quick Prompt Sender
-function sendQuickPrompt(promptText) {
-    const input = document.getElementById('chatInput');
-    input.value = promptText;
-    autoResizeTextarea(input);
-    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
-}
-
-// ----------------------------------------------------
-// Session Management
-// ----------------------------------------------------
-
-async function loadSessions() {
-    const listEl = document.getElementById('sessionsList');
-    if (!listEl) return;
-
-    try {
-        const res = await apiRequest('/api/v1/chat/sessions');
-        if (!res.ok) throw new Error('세션 목록 조회 실패');
-        
-        const sessions = await res.json();
-        listEl.innerHTML = '';
-
-        if (sessions.length === 0) {
-            listEl.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs">생성된 대화가 없습니다.</div>';
-            return;
-        }
-
-        sessions.forEach(session => {
-            const item = document.createElement('div');
-            const isActive = currentSessionId === session.id;
-            item.className = `group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition text-xs ${
-                isActive ? 'bg-indigo-600/20 text-indigo-300 font-medium border border-indigo-500/30' : 'hover:bg-slate-800 text-slate-300'
-            }`;
-            item.onclick = () => selectSession(session.id, session.title);
-
-            item.innerHTML = `
-                <div class="flex items-center space-x-2.5 truncate flex-1 mr-2">
-                    <i class="fa-regular fa-message flex-shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}"></i>
-                    <span class="truncate">${escapeHtml(session.title)}</span>
-                </div>
-                <button onclick="event.stopPropagation(); deleteSession(${session.id})" 
-                        title="대화 삭제" 
-                        class="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 rounded transition flex-shrink-0">
-                    <i class="fa-solid fa-trash-can text-[11px]"></i>
-                </button>
-            `;
-            listEl.appendChild(item);
-        });
-
-    } catch (err) {
-        listEl.innerHTML = `<div class="text-center py-6 text-red-400 text-xs">오류: ${err.message}</div>`;
-    }
-}
-
-async function selectSession(sessionId, title) {
-    if (isStreaming) return;
-    currentSessionId = sessionId;
-    document.getElementById('currentSessionBadge').innerText = `#${sessionId}`;
-    document.getElementById('currentSessionTitle').innerText = title || '대화방';
-
-    // Hide welcome hero
-    const welcomeHero = document.getElementById('welcomeHero');
-    if (welcomeHero) welcomeHero.classList.add('hidden');
-
-    // Reload sidebar highlight
-    loadSessions();
-
-    // Fetch messages
-    const container = document.getElementById('messagesContainer');
-    container.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-1"></i> 대화 내역 불러오는 중...</div>';
-
-    try {
-        const res = await apiRequest(`/api/v1/chat/sessions/${sessionId}/messages`);
-        if (!res.ok) throw new Error('대화 내역 조회 실패');
-        
-        const messages = await res.json();
-        container.innerHTML = '';
-
-        if (messages.length === 0) {
-            if (welcomeHero) {
-                welcomeHero.classList.remove('hidden');
-                container.appendChild(welcomeHero);
-            }
-            return;
-        }
-
-        messages.forEach(msg => {
-            appendMessageBubble(msg.role, msg.content, {
-                latency_ms: msg.latency_ms,
-                status: msg.status,
-                created_at: msg.created_at
-            });
-        });
-
-        scrollToBottom();
-
-    } catch (err) {
-        container.innerHTML = `<div class="text-center py-12 text-red-400 text-sm">오류: ${err.message}</div>`;
-    }
-}
-
-function createNewSession() {
-    if (isStreaming) return;
-    currentSessionId = null;
-    document.getElementById('currentSessionBadge').innerText = '새 세션';
-    document.getElementById('currentSessionTitle').innerText = '새로운 대화';
-    
-    const container = document.getElementById('messagesContainer');
-    container.innerHTML = '';
-    
-    const welcomeHero = document.getElementById('welcomeHero');
-    if (welcomeHero) {
-        welcomeHero.classList.remove('hidden');
-        container.appendChild(welcomeHero);
-    }
-    
+    if (!setupNavbar(true)) return;
     loadSessions();
     document.getElementById('chatInput').focus();
+});
+function autoResizeTextarea(input) {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight,160)+'px';
+    document.getElementById('charCounter').textContent = input.value.length+' / 2000';
 }
-
-async function deleteSession(sessionId) {
-    if (!confirm('이 대화 세션과 모든 메시지를 삭제하시겠습니까?')) return;
-    try {
-        const res = await apiRequest(`/api/v1/chat/sessions/${sessionId}`, { method: 'DELETE' });
-        if (res.ok) {
-            showToast('대화가 삭제되었습니다.', 'info');
-            if (currentSessionId === sessionId) {
-                createNewSession();
-            } else {
-                loadSessions();
-            }
-        }
-    } catch (err) {
-        showToast('삭제 실패', 'error');
+function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault(); document.getElementById('chatForm').requestSubmit();
     }
 }
-
-function clearCurrentChatView() {
-    const container = document.getElementById('messagesContainer');
-    container.innerHTML = '';
-    const welcomeHero = document.getElementById('welcomeHero');
-    if (welcomeHero) {
-        welcomeHero.classList.remove('hidden');
-        container.appendChild(welcomeHero);
-    }
-}
-
-// ----------------------------------------------------
-// Streaming Chat Execution (SSE)
-// ----------------------------------------------------
-
-async function handleChatSubmit(e) {
-    e.preventDefault();
+function sendQuickPrompt(text) {
     if (isStreaming) return;
-
     const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-    if (!message) return;
-
-    // Reset input
-    input.value = '';
-    autoResizeTextarea(input);
-
-    // Hide error banner & welcome hero
-    document.getElementById('errorBanner').classList.add('hidden');
-    const welcomeHero = document.getElementById('welcomeHero');
-    if (welcomeHero) welcomeHero.classList.add('hidden');
-
-    // Append User Message Bubble
-    appendMessageBubble('user', message);
-    scrollToBottom();
-
-    // Create Assistant Placeholder Bubble for Streaming
-    const assistantBubbleId = 'ai-stream-' + Date.now();
-    const assistantBubble = appendAssistantStreamingBubble(assistantBubbleId);
-    scrollToBottom();
-
-    // UI state: streaming mode
-    setStreamingState(true);
-
+    input.value = text; autoResizeTextarea(input); document.getElementById('chatForm').requestSubmit();
+}
+async function loadSessions() {
+    const requestId = ++sessionRequestId;
+    const list = document.getElementById('sessionsList');
     try {
-        const token = getToken();
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        const response = await apiRequest('/api/v1/chat/sessions');
+        if (!response.ok) throw new Error('대화 목록을 불러오지 못했습니다.');
+        const sessions = await response.json();
+        if (requestId !== sessionRequestId) return;
+        list.innerHTML = '';
+        if (!sessions.length) { list.innerHTML = '<p class="rail-empty">첫 질문을 남기면<br>여기에 대화가 모입니다.</p>'; return; }
+        for (const session of sessions) {
+            const item = document.createElement('div');
+            item.className = 'session-item'+(currentSessionId===session.id?' active':'');
+            const select = document.createElement('button');
+            select.className = 'session-select'; select.disabled = isStreaming;
+            select.setAttribute('aria-current',currentSessionId===session.id?'true':'false');
+            select.innerHTML = '<i class="fa-regular fa-comment" aria-hidden="true"></i><span>'+escapeHtml(session.title)+'</span>';
+            select.onclick = () => selectSession(session.id,session.title);
+            const remove = document.createElement('button');
+            remove.className = 'session-delete'; remove.disabled = isStreaming;
+            remove.setAttribute('aria-label',session.title+' 대화 삭제');
+            remove.innerHTML = '<i class="fa-regular fa-trash-can" aria-hidden="true"></i>';
+            remove.onclick = () => deleteSession(session.id);
+            item.append(select,remove); list.appendChild(item);
         }
-
-        const response = await fetch(getApiUrl('/api/v1/chat/stream'), {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                message: message,
-                session_id: currentSessionId
-            })
-        });
-
-        if (response.status === 401) {
-            removeToken();
-            window.location.href = 'login.html';
-            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-        }
-
-        if (!response.ok) {
-            throw new Error(`서버 응답 오류 (HTTP ${response.status})`);
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let buffer = '';
-        let fullAssistantText = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n\n');
-            buffer = lines.pop(); // keep partial chunk
-
-            for (const block of lines) {
-                if (!block.trim()) continue;
-
-                let eventType = 'message';
-                let dataStr = '';
-
-                const blockLines = block.split('\n');
-                for (const line of blockLines) {
-                    if (line.startsWith('event:')) {
-                        eventType = line.replace('event:', '').trim();
-                    } else if (line.startsWith('data:')) {
-                        dataStr = line.replace('data:', '').trim();
-                    }
-                }
-
-                if (!dataStr) continue;
-
-                try {
-                    const parsed = JSON.parse(dataStr);
-
-                    if (eventType === 'meta') {
-                        // First event with session information
-                        if (!currentSessionId) {
-                            currentSessionId = parsed.session_id;
-                            document.getElementById('currentSessionBadge').innerText = `#${parsed.session_id}`;
-                            document.getElementById('currentSessionTitle').innerText = parsed.session_title;
-                            loadSessions();
-                        }
-                    } else if (eventType === 'done') {
-                        // Final event
-                        finishStreamingBubble(assistantBubbleId, fullAssistantText, parsed.latency_ms, parsed.status);
-                    } else if (eventType === 'error') {
-                        showErrorBanner(parsed.message || '오류가 발생했습니다.');
-                    } else {
-                        // Regular token streaming chunk
-                        if (parsed.text) {
-                            fullAssistantText += parsed.text;
-                            updateStreamingBubbleText(assistantBubbleId, fullAssistantText);
-                            scrollToBottom();
-                        }
-                    }
-                } catch (parseErr) {
-                    console.error('SSE JSON parse error:', parseErr, dataStr);
-                }
-            }
-        }
-
-    } catch (err) {
-        console.error(err);
-        showErrorBanner(err.message || '네트워크 오류가 발생했습니다.');
-        updateStreamingBubbleText(assistantBubbleId, `\n\n⚠️ **요청 처리 중 오류가 발생했습니다: ${err.message}**`);
-    } finally {
-        setStreamingState(false);
-        input.focus();
+    } catch (error) {
+        if (requestId===sessionRequestId) list.innerHTML = '<p class="rail-empty">'+escapeHtml(error.message)+'</p>';
     }
 }
-
-// ----------------------------------------------------
-// Bubble Rendering Helpers
-// ----------------------------------------------------
-
-function appendMessageBubble(role, content, meta = {}) {
+function renderWelcome() {
     const container = document.getElementById('messagesContainer');
-    const msgDiv = document.createElement('div');
-
-    if (role === 'user') {
-        msgDiv.className = 'flex justify-end items-start space-x-3 max-w-4xl mx-auto';
-        msgDiv.innerHTML = `
-            <div class="bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-sm shadow-md max-w-2xl text-sm leading-relaxed whitespace-pre-wrap font-sans">
-                ${escapeHtml(content)}
-            </div>
-            <div class="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
-                <i class="fa-solid fa-user"></i>
-            </div>
-        `;
+    container.replaceChildren(document.getElementById('welcomeTemplate').content.cloneNode(true));
+}
+async function selectSession(id,title) {
+    if (isStreaming) return;
+    const requestId = ++selectionRequestId;
+    currentSessionId = id;
+    document.getElementById('currentSessionBadge').textContent = '#'+id;
+    document.getElementById('currentSessionTitle').textContent = title || '대화';
+    document.getElementById('messagesContainer').innerHTML = '<div class="loading-state">대화를 불러오는 중…</div>';
+    toggleSidebar(false); loadSessions();
+    try {
+        const response = await apiRequest('/api/v1/chat/sessions/'+id+'/messages');
+        if (!response.ok) throw new Error('대화를 불러오지 못했습니다.');
+        const messages = await response.json();
+        if (requestId!==selectionRequestId) return;
+        document.getElementById('messagesContainer').replaceChildren();
+        if (!messages.length) renderWelcome();
+        messages.forEach(message => appendMessageBubble(message.role,message.content,message));
+        scrollToBottom();
+    } catch (error) {
+        if (requestId===selectionRequestId) document.getElementById('messagesContainer').innerHTML = '<div class="empty-state">'+escapeHtml(error.message)+'</div>';
+    }
+}
+function createNewSession() {
+    if (isStreaming) return;
+    ++selectionRequestId; currentSessionId = null;
+    document.getElementById('currentSessionBadge').textContent = '새 대화';
+    document.getElementById('currentSessionTitle').textContent = '새로운 질문을 시작하세요';
+    document.getElementById('errorBanner').classList.add('hidden');
+    renderWelcome(); loadSessions(); toggleSidebar(false); document.getElementById('chatInput').focus();
+}
+async function deleteSession(id) {
+    if (isStreaming || !confirm('이 대화와 질문·답변을 삭제할까요? 삭제한 기록은 복구할 수 없습니다.')) return;
+    try {
+        const response = await apiRequest('/api/v1/chat/sessions/'+id,{method:'DELETE'});
+        if (!response.ok) throw new Error('삭제하지 못했습니다.');
+        if (currentSessionId===id) createNewSession(); else loadSessions();
+        showToast('대화를 삭제했습니다.');
+    } catch (error) { showToast(error.message,'error'); }
+}
+function appendMessageBubble(role,content,meta={}) {
+    const element = document.createElement('article');
+    element.className = 'message'+(role==='user'?' message-user':'');
+    if (role==='user') {
+        element.innerHTML = '<div class="user-bubble">'+escapeHtml(content)+'</div>';
     } else {
-        msgDiv.className = 'flex items-start space-x-3 max-w-4xl mx-auto';
-        const renderedHtml = marked.parse(content);
-        const latencyText = meta.latency_ms ? `${meta.latency_ms}ms` : '';
-
-        msgDiv.innerHTML = `
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md shadow-indigo-500/20">
-                <i class="fa-solid fa-robot"></i>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-sm shadow-md max-w-3xl flex-1 text-slate-200">
-                <div class="markdown-body font-sans">
-                    ${renderedHtml}
-                </div>
-                ${latencyText ? `
-                    <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                        <span><i class="fa-regular fa-clock mr-1"></i>응답 속도: ${latencyText}</span>
-                        <button onclick="copyMessageText(this)" class="hover:text-indigo-400 transition" title="텍스트 복사">
-                            <i class="fa-regular fa-copy"></i>
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        element.innerHTML = '<div class="message-avatar" aria-hidden="true"><i class="fa-solid fa-leaf"></i></div><div class="message-content"><div class="message-label">현장노트 · AI 답변</div><div class="markdown-body">'+renderMarkdown(content)+'</div><div class="message-meta"><span>'+(meta.latency_ms?formatDuration(meta.latency_ms):'')+'</span><button class="copy-btn" onclick="copyMessageText(this)" aria-label="답변 텍스트 복사"><i class="fa-regular fa-copy" aria-hidden="true"></i> 복사</button></div></div>';
+        element.dataset.content = content;
     }
-    container.appendChild(msgDiv);
+    document.getElementById('messagesContainer').appendChild(element);
+    return element;
 }
-
 function appendAssistantStreamingBubble(id) {
-    const container = document.getElementById('messagesContainer');
-    const msgDiv = document.createElement('div');
-    msgDiv.id = id;
-    msgDiv.className = 'flex items-start space-x-3 max-w-4xl mx-auto';
-
-    msgDiv.innerHTML = `
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md shadow-indigo-500/20 animate-pulse">
-            <i class="fa-solid fa-robot"></i>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-sm shadow-md max-w-3xl flex-1 text-slate-200">
-            <div class="markdown-body font-sans content-area typing-cursor">
-                <p class="text-slate-400 italic">생각하는 중...</p>
-            </div>
-            <div class="meta-footer hidden mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                <span class="latency-label"></span>
-                <button onclick="copyMessageText(this)" class="hover:text-indigo-400 transition" title="텍스트 복사">
-                    <i class="fa-regular fa-copy"></i>
-                </button>
-            </div>
-        </div>
-    `;
-    container.appendChild(msgDiv);
-    return msgDiv;
+    const element = appendMessageBubble('assistant','');
+    element.id = id;
+    const content = element.querySelector('.markdown-body');
+    content.classList.add('content-area','typing-cursor');
+    content.innerHTML = '<span class="thinking-label">질문을 살펴보고 있어요…</span>';
+    element.querySelector('.message-meta').classList.add('hidden');
+    return element;
 }
-
-function updateStreamingBubbleText(id, text) {
-    const bubble = document.getElementById(id);
-    if (!bubble) return;
-    const contentArea = bubble.querySelector('.content-area');
-    if (contentArea) {
-        contentArea.innerHTML = marked.parse(text);
-        contentArea.classList.add('typing-cursor');
-    }
+function updateStreamingBubbleText(id,text) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.dataset.content = text;
+    element.querySelector('.content-area').innerHTML = renderMarkdown(text);
 }
-
-function finishStreamingBubble(id, fullText, latencyMs, status) {
-    const bubble = document.getElementById(id);
-    if (!bubble) return;
-    
-    // Stop avatar animation & typing cursor
-    const avatar = bubble.querySelector('.animate-pulse');
-    if (avatar) avatar.classList.remove('animate-pulse');
-
-    const contentArea = bubble.querySelector('.content-area');
-    if (contentArea) {
-        contentArea.classList.remove('typing-cursor');
-        contentArea.innerHTML = marked.parse(fullText);
-    }
-
-    const metaFooter = bubble.querySelector('.meta-footer');
-    if (metaFooter && latencyMs) {
-        metaFooter.classList.remove('hidden');
-        metaFooter.querySelector('.latency-label').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>응답 속도: ${latencyMs}ms`;
-    }
+function finishStreamingBubble(id,text,latency,status) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    updateStreamingBubbleText(id,text);
+    element.querySelector('.content-area').classList.remove('typing-cursor');
+    element.querySelector('.message-meta').classList.remove('hidden');
+    element.querySelector('.message-meta span').textContent = (latency?formatDuration(latency)+' · ':'')+(status==='success'?'답변 완료':'답변 확인 필요');
 }
-
 function setStreamingState(streaming) {
     isStreaming = streaming;
-    const btn = document.getElementById('sendBtn');
-    const input = document.getElementById('chatInput');
-    if (streaming) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
-    } else {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs"></i>';
-    }
+    const button = document.getElementById('sendBtn');
+    button.disabled = streaming;
+    button.setAttribute('aria-label',streaming?'답변을 받는 중':'질문 보내기');
+    button.innerHTML = '<i class="fa-solid '+(streaming?'fa-spinner fa-spin':'fa-arrow-up')+'" aria-hidden="true"></i>';
+    document.getElementById('chatInput').readOnly = streaming;
+    document.getElementById('chatForm').setAttribute('aria-busy',String(streaming));
+    document.querySelectorAll('.new-chat,.session-select,.session-delete,.topic-card').forEach(item => item.disabled = streaming);
 }
-
-function showErrorBanner(msg) {
-    const banner = document.getElementById('errorBanner');
-    const text = document.getElementById('errorBannerText');
-    text.innerText = msg;
-    banner.classList.remove('hidden');
-}
-
-function scrollToBottom() {
-    const container = document.getElementById('messagesContainer');
-    container.scrollTop = container.scrollHeight;
-}
-
-function copyMessageText(btn) {
-    const bubble = btn.closest('.bg-slate-900');
-    const contentArea = bubble.querySelector('.markdown-body');
-    if (contentArea) {
-        navigator.clipboard.writeText(contentArea.innerText).then(() => {
-            showToast('답변 텍스트가 복사되었습니다.', 'success');
+async function handleChatSubmit(event) {
+    event.preventDefault();
+    if (isStreaming) return;
+    const input = document.getElementById('chatInput'), message = input.value.trim();
+    if (!message) return;
+    ++selectionRequestId;
+    input.value = ''; autoResizeTextarea(input);
+    document.getElementById('welcomeHero')?.remove();
+    document.getElementById('errorBanner').classList.add('hidden');
+    appendMessageBubble('user',message);
+    const bubbleId = 'ai-stream-'+Date.now();
+    appendAssistantStreamingBubble(bubbleId); setStreamingState(true); scrollToBottom();
+    let fullText = '', finished = false;
+    try {
+        const headers = {'Content-Type':'application/json'}, token = getToken();
+        if (token) headers.Authorization = 'Bearer '+token;
+        const response = await fetch(getApiUrl('/api/v1/chat/stream'),{
+            method:'POST',headers,body:JSON.stringify({message,session_id:currentSessionId})
         });
-    }
+        if (response.status===401) { removeToken(); window.location.href='login.html'; throw new Error('다시 로그인해 주세요.'); }
+        if (!response.ok) throw new Error('요청을 처리하지 못했습니다. (HTTP '+response.status+')');
+        const reader = response.body.getReader(), decoder = new TextDecoder();
+        let buffer = '';
+        function processEvent(block) {
+            let type = 'message';
+            const data = [];
+            for (const line of block.split('\n')) {
+                if (line.startsWith('event:')) type = line.slice(6).trim();
+                if (line.startsWith('data:')) data.push(line.slice(5).trim());
+            }
+            if (!data.length) return;
+            const value = JSON.parse(data.join('\n'));
+            if (type==='meta' && !currentSessionId) {
+                currentSessionId = value.session_id;
+                document.getElementById('currentSessionBadge').textContent = '#'+value.session_id;
+                document.getElementById('currentSessionTitle').textContent = value.session_title;
+                loadSessions();
+            } else if (type==='done') {
+                finished = true; finishStreamingBubble(bubbleId,fullText,value.latency_ms,value.status);
+            } else if (type==='error') { showErrorBanner(value.message || '답변 중 오류가 발생했습니다.'); }
+            else if (value.text) { fullText += value.text; updateStreamingBubbleText(bubbleId,fullText); scrollToBottom(); }
+        }
+        while (true) {
+            const {done,value} = await reader.read();
+            buffer = (buffer + decoder.decode(value || new Uint8Array(),{stream:!done})).replace(/\r\n/g,'\n');
+            let boundary;
+            while ((boundary=buffer.indexOf('\n\n'))>=0) {
+                const block = buffer.slice(0,boundary); buffer = buffer.slice(boundary+2);
+                if (block.trim()) processEvent(block);
+            }
+            if (done) break;
+        }
+        if (buffer.trim()) processEvent(buffer);
+        if (!finished) throw new Error('답변 연결이 종료되었습니다. 잠시 후 다시 질문해 주세요.');
+    } catch (error) {
+        showErrorBanner(error.message || '서버 연결을 확인해 주세요.');
+        finishStreamingBubble(bubbleId,fullText || '답변을 받지 못했습니다. 잠시 후 다시 질문해 주세요.',null,'error');
+    } finally { setStreamingState(false); input.focus(); loadSessions(); }
+}
+function showErrorBanner(message) {
+    document.getElementById('errorBannerText').textContent = message;
+    document.getElementById('errorBanner').classList.remove('hidden');
+}
+function scrollToBottom() { const container=document.getElementById('messagesContainer'); container.scrollTop=container.scrollHeight; }
+async function copyMessageText(button) {
+    const content = button.closest('.message')?.dataset.content;
+    try { await navigator.clipboard.writeText(content || ''); showToast('답변을 복사했습니다.','success'); }
+    catch { showToast('복사하지 못했습니다. 답변을 직접 선택해 복사해 주세요.','error'); }
 }
