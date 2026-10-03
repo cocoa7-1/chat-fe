@@ -245,7 +245,7 @@ async function handleChatSubmit(e) {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch(`${CONFIG.API_BASE_URL}/api/v1/chat/stream`, {
+        const response = await fetch(getApiUrl('/api/v1/chat/stream'), {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({

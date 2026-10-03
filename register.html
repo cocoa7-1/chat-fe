@@ -75,19 +75,31 @@
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                             <i class="fa-solid fa-user"></i>
                         </div>
-                        <input type="text" id="username" name="username" required minlength="3" maxlength="30"
+                        <input type="text" id="username" name="username" required minlength="3" maxlength="30" autocomplete="username"
                                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                                placeholder="영문/숫자/한글 3자 이상">
                     </div>
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-slate-300 mb-1.5">비밀번호 (4자 이상)</label>
+                    <label for="nickname" class="block text-sm font-medium text-slate-300 mb-1.5">닉네임</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </div>
+                        <input type="text" id="nickname" name="nickname" required minlength="1" maxlength="30" autocomplete="nickname"
+                               class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                               placeholder="사용할 닉네임을 입력하세요">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-300 mb-1.5">비밀번호 (8자 이상)</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                             <i class="fa-solid fa-key"></i>
                         </div>
-                        <input type="password" id="password" name="password" required minlength="4"
+                        <input type="password" id="password" name="password" required minlength="8" maxlength="100" autocomplete="new-password"
                                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                                placeholder="비밀번호를 입력하세요">
                     </div>
@@ -99,7 +111,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                             <i class="fa-solid fa-check-double"></i>
                         </div>
-                        <input type="password" id="passwordConfirm" name="passwordConfirm" required minlength="4"
+                        <input type="password" id="passwordConfirm" name="passwordConfirm" required minlength="8" maxlength="100" autocomplete="new-password"
                                class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                                placeholder="비밀번호를 한 번 더 입력하세요">
                     </div>

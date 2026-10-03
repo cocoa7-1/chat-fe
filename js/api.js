@@ -36,7 +36,7 @@ function getUser() {
  * Standard API request wrapper with Bearer token authentication
  */
 async function apiRequest(endpoint, options = {}) {
-    const url = endpoint.startsWith('http') ? endpoint : `${CONFIG.API_BASE_URL}${endpoint}`;
+    const url = endpoint.startsWith('http') ? endpoint : getApiUrl(endpoint);
     
     const headers = {
         'Content-Type': 'application/json',
