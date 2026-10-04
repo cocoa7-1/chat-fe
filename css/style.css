@@ -1,6 +1,13 @@
+/* CSS는 HTML의 모양과 배치를 정합니다. .이름은 class, #이름은 id, :hover는 마우스를 올린 상태를 */
+/* 선택합니다. */
+/* px는 화면 길이 단위, rem은 기본 글자 크기 기준 단위, %는 부모 영역 기준 비율입니다. padding은 안쪽, */
+/* margin은 바깥 여백입니다. */
+/* flex는 한 방향 배치, grid는 행/열 배치입니다. @media는 화면 폭/사용자 설정에 따라 다른 모양을 */
+/* 적용합니다. */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
 
 /* 현장노트 — a quiet workspace for construction knowledge. */
+/* 공통 색·글꼴 등의 이름을 변수로 둡니다. var(--이름)으로 가져오면 여러 화면의 모양을 한곳에서 맞출 수 있습니다. */
 :root {
   --paper:#f5f4ef;
   --surface:#fff;
@@ -18,6 +25,7 @@
 * {
   box-sizing:border-box
 }
+/* 화면 전체의 기본 글꼴·배경·크기를 정합니다. 아래 페이지별 규칙은 필요한 부분만 덮어씁니다. */
 body {
   margin:0;
   font-family:var(--font);
@@ -58,9 +66,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   outline:3px solid #bdcf8a;
   outline-offset:3px
 }
+/* JS가 필요할 때 class를 붙여 안내/요소를 숨기는 공통 규칙입니다. */
 .hidden {
   display:none!important
 }
+/* 시각적으로 숨기되 스크린리더에는 남길 안내입니다. display:none과 달리 접근성 정보를 제공하기 위한 규칙입니다. */
 .sr-only {
   position:absolute;
   width:1px;
@@ -72,6 +82,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .fa-spin {
   animation:spin 1s linear infinite
 }
+/* 회전 애니메이션의 중간/끝 모양을 정의합니다. 적용한 요소만 이 움직임을 사용합니다. */
 @keyframes spin {
   to {
     transform:rotate(360deg)
@@ -95,12 +106,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   text-transform:uppercase;
   color:var(--muted)
 }
+/* 메뉴와 작업 영역을 나누는 전체 틀입니다. 자식 영역이 줄어들 수 있어야 작은 화면에서 넘침이 줄어듭니다. */
 .app-shell {
   display:flex;
   height:100dvh;
   min-height:580px;
   overflow:hidden
 }
+/* 왼쪽 탐색 메뉴의 크기·색·위치를 정합니다. 모바일에서는 아래 @media 규칙이 표시 방식을 바꿉니다. */
 .sidebar {
   width:254px;
   flex-shrink:0;
@@ -298,6 +311,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   display:flex;
   flex-direction:column
 }
+/* 화면 제목·메뉴·계정 버튼을 한 줄에 놓는 상단 영역입니다. 모바일에서는 공간에 맞춰 일부 표시가 달라집니다. */
 .topbar {
   height:74px;
   flex-shrink:0;
@@ -370,6 +384,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .sidebar-backdrop {
   display:none
 }
+/* 선택한 대화 제목과 안내를 나란히 배치합니다. 내부 DB 번호를 표시하는 배지는 제거했습니다. */
 .workspace-top {
   padding:24px 42px 16px;
   display:flex;
@@ -389,14 +404,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   text-overflow:ellipsis;
   white-space:nowrap
 }
-.session-badge {
-  font-size:10px;
-  background:#ebece4;
-  color:#899580;
-  padding:4px 8px;
-  border-radius:4px;
-  white-space:nowrap
-}
 .quiet-label {
   color:#93a18e;
   font-size:11px;
@@ -408,6 +415,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   display:flex;
   flex-direction:column
 }
+/* 메시지 영역만 스크롤하게 합니다. overflow:auto는 내용이 공간보다 클 때 스크롤을 만듭니다. */
+/* min-height:0은 부모 안에서 이 영역이 줄어들 수 있게 합니다. */
 .messages {
   flex:1;
   min-height:0;
@@ -465,6 +474,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   font-size:10px;
   color:#9a9f94
 }
+/* 예시 질문 카드들을 행/열로 나눕니다. 아래 화면 폭별 규칙에서 열 수를 바꿉니다. */
 .topic-grid {
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -547,6 +557,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   flex-shrink:0;
   background:var(--paper)
 }
+/* 질문 입력과 전송 버튼 영역입니다. 답변 수신 중 비활성화 동작은 CSS가 아니라 JS에서 처리합니다. */
 .composer {
   max-width:900px;
   margin:0 auto;
@@ -616,6 +627,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   max-width:900px;
   margin-inline:auto
 }
+/* 질문과 답변 한 건의 기본 배치입니다. 말풍선 서식은 역할별 추가 규칙으로 구분합니다. */
 .message {
   max-width:900px;
   margin:20px auto 28px;
@@ -660,6 +672,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   overflow-wrap:anywhere;
   font-size:13px
 }
+/* AI 답변의 제목·목록·표 같은 Markdown 결과를 읽기 좋게 표시합니다. HTML의 안전한 정제는 JS가 담당합니다. */
 .markdown-body {
   font-size:14px;
   line-height:1.9;
@@ -860,6 +873,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .button-small {
   padding:7px 11px
 }
+/* 기록 통계 카드를 배치합니다. 숫자 자체는 API 응답을 JS가 넣고 CSS는 모양만 정합니다. */
 .metric-grid {
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -901,6 +915,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   border-radius:13px;
   overflow:hidden
 }
+/* 기록 종류 탭과 검색/상태 필터를 배치합니다. 좁은 화면에서 줄바꿈하도록 아래 규칙이 보완합니다. */
 .records-toolbar {
   display:flex;
   align-items:center;
@@ -964,6 +979,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .table-scroll {
   overflow-x:auto
 }
+/* 기록 표의 전체 폭·셀 간격·정렬을 정합니다. 내용 열은 넓게 두고 응답시간은 작은 화면에서 숨깁니다. */
 .records-table {
   border-collapse:collapse;
   width:100%;
@@ -994,6 +1010,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   width:48%;
   min-width:240px
 }
+/* 긴 질문/답변을 미리보기로 제한합니다. 전체 내용은 클릭했을 때 대화상자로 읽습니다. */
 .record-preview {
   background:transparent;
   text-align:left;
@@ -1099,6 +1116,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   justify-content:space-between;
   gap:15px
 }
+/* 전체 기록을 읽는 대화상자의 크기와 모양입니다. ::backdrop 규칙은 뒤쪽 화면의 덮개를 꾸밉니다. */
 .detail-dialog {
   border:1px solid var(--line);
   border-radius:16px;
@@ -1135,6 +1153,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   overflow:auto;
   max-height:65dvh
 }
+/* 로그인/가입 화면의 기본 틀입니다. 왼쪽 소개와 오른쪽 입력 영역을 나눕니다. */
 .auth-page {
   min-height:100dvh;
   display:grid;
@@ -1205,6 +1224,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   display:flex;
   justify-content:space-between
 }
+/* 입력 폼이 놓이는 작업 영역입니다. 큰 화면과 모바일에서 여백과 정렬을 달리합니다. */
 .auth-main {
   display:flex;
   flex-direction:column;
@@ -1257,6 +1277,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   color:#9da78f;
   font-weight:400
 }
+/* 입력칸과 비밀번호 표시 버튼을 한 영역에 묶습니다. type 변경은 JS가 하고 여기서는 겹치지 않게 배치합니다. */
 .input-wrap {
   position:relative
 }
@@ -1325,6 +1346,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .mobile-brand {
   display:none
 }
+/* 잠깐 나타나는 안내의 고정 위치입니다. fixed는 페이지 스크롤에 따라 같이 밀리지 않게 합니다. */
 .toast-container {
   position:fixed;
   bottom:24px;
@@ -1358,6 +1380,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
     opacity:0
   }
 }
+/* 이 조건을 만족할 때만 아래 규칙을 적용합니다. min-width는 이 폭 이상, max-width는 이 폭 이하입니다. */
 @media(min-width:1000px) {
   .welcome {
     margin-top:15px
@@ -1372,6 +1395,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .welcome-description {
     margin-top:12px
   }
+  /* 예시 질문 카드들을 행/열로 나눕니다. 아래 화면 폭별 규칙에서 열 수를 바꿉니다. */
   .topic-grid {
     grid-template-columns:repeat(4,1fr)
   }
@@ -1395,6 +1419,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
     right:13px
   }
 }
+/* 이 조건을 만족할 때만 아래 규칙을 적용합니다. min-width는 이 폭 이상, max-width는 이 폭 이하입니다. */
 @media(min-width:1500px) {
   .welcome {
     margin-top:55px
@@ -1407,17 +1432,23 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
     min-height:153px
   }
 }
+/* 이 조건을 만족할 때만 아래 규칙을 적용합니다. min-width는 이 폭 이상, max-width는 이 폭 이하입니다. */
 @media(max-width:1100px) {
+  /* 왼쪽 탐색 메뉴의 크기·색·위치를 정합니다. 모바일에서는 아래 @media 규칙이 표시 방식을 바꿉니다. */
   .sidebar {
     width:218px;
     padding-inline:14px
   }
+  /* 화면 제목·메뉴·계정 버튼을 한 줄에 놓는 상단 영역입니다. 모바일에서는 공간에 맞춰 일부 표시가 달라집니다. */
   .topbar {
     padding-inline:26px
   }
+  /* 메시지 영역만 스크롤하게 합니다. overflow:auto는 내용이 공간보다 클 때 스크롤을 만듭니다. */
+  /* min-height:0은 부모 안에서 이 영역이 줄어들 수 있게 합니다. */
   .messages {
     padding-inline:27px
   }
+  /* 선택한 대화 제목과 안내를 나란히 배치합니다. 내부 DB 번호를 표시하는 배지는 제거했습니다. */
   .workspace-top {
     padding-inline:28px
   }
@@ -1454,14 +1485,18 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .auth-story h1 {
     font-size:38px
   }
+  /* 입력 폼이 놓이는 작업 영역입니다. 큰 화면과 모바일에서 여백과 정렬을 달리합니다. */
   .auth-main {
     padding:35px
   }
 }
+/* 이 조건을 만족할 때만 아래 규칙을 적용합니다. min-width는 이 폭 이상, max-width는 이 폭 이하입니다. */
 @media(max-width:760px) {
+  /* 메뉴와 작업 영역을 나누는 전체 틀입니다. 자식 영역이 줄어들 수 있어야 작은 화면에서 넘침이 줄어듭니다. */
   .app-shell {
     min-height:0
   }
+  /* 왼쪽 탐색 메뉴의 크기·색·위치를 정합니다. 모바일에서는 아래 @media 규칙이 표시 방식을 바꿉니다. */
   .sidebar {
     position:fixed;
     inset:0 auto 0 0;
@@ -1484,6 +1519,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
     display:grid;
     flex-shrink:0
   }
+  /* 화면 제목·메뉴·계정 버튼을 한 줄에 놓는 상단 영역입니다. 모바일에서는 공간에 맞춰 일부 표시가 달라집니다. */
   .topbar {
     height:62px;
     padding:0 17px;
@@ -1505,12 +1541,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .logout-btn span {
     display:none
   }
+  /* 선택한 대화 제목과 안내를 나란히 배치합니다. 내부 DB 번호를 표시하는 배지는 제거했습니다. */
   .workspace-top {
     padding:18px 20px 10px
   }
   .workspace-top .quiet-label {
     display:none
   }
+  /* 메시지 영역만 스크롤하게 합니다. overflow:auto는 내용이 공간보다 클 때 스크롤을 만듭니다. */
+  /* min-height:0은 부모 안에서 이 영역이 줄어들 수 있게 합니다. */
   .messages {
     padding:3px 20px 20px
   }
@@ -1560,6 +1599,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .composer-note {
     font-size:9px
   }
+  /* 질문과 답변 한 건의 기본 배치입니다. 말풍선 서식은 역할별 추가 규칙으로 구분합니다. */
   .message {
     gap:10px
   }
@@ -1567,6 +1607,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
     width:25px;
     height:25px
   }
+  /* AI 답변의 제목·목록·표 같은 Markdown 결과를 읽기 좋게 표시합니다. HTML의 안전한 정제는 JS가 */
+  /* 담당합니다. */
   .markdown-body {
     font-size:13px
   }
@@ -1596,6 +1638,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .page-heading .button i {
     font-size:12px
   }
+  /* 기록 통계 카드를 배치합니다. 숫자 자체는 API 응답을 JS가 넣고 CSS는 모양만 정합니다. */
   .metric-grid {
     grid-template-columns:repeat(2,1fr);
     gap:10px;
@@ -1607,6 +1650,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .metric-value {
     font-size:27px
   }
+  /* 기록 종류 탭과 검색/상태 필터를 배치합니다. 좁은 화면에서 줄바꿈하도록 아래 규칙이 보완합니다. */
   .records-toolbar {
     padding:14px
   }
@@ -1638,12 +1682,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .records-note {
     font-size:9px
   }
+  /* 로그인/가입 화면의 기본 틀입니다. 왼쪽 소개와 오른쪽 입력 영역을 나눕니다. */
   .auth-page {
     display:block
   }
   .auth-story {
     display:none
   }
+  /* 입력 폼이 놓이는 작업 영역입니다. 큰 화면과 모바일에서 여백과 정렬을 달리합니다. */
   .auth-main {
     min-height:100dvh;
     padding:26px
@@ -1682,11 +1728,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .auth-page.register-page .auth-card {
     padding-top:5px
   }
+  /* 잠깐 나타나는 안내의 고정 위치입니다. fixed는 페이지 스크롤에 따라 같이 밀리지 않게 합니다. */
   .toast-container {
     bottom:14px;
     right:16px
   }
 }
+/* 움직임 줄이기를 선택한 사용자에게 애니메이션과 부드러운 스크롤을 줄여 표시합니다. */
 @media(prefers-reduced-motion:reduce) {
   *,*:before,*:after {
     animation:none!important;

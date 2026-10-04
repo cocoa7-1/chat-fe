@@ -1,5 +1,11 @@
 <!DOCTYPE html>
+<!-- HTML은 화면의 구조를 정합니다. 태그는 구역/버튼/입력칸을 뜻하고 class는 CSS 모양, id는 JS가 찾는 -->
+<!-- 이름입니다. -->
+<!-- 주석은 브라우저 화면에는 표시되지 않지만 페이지 소스에는 보이므로 비밀을 적지 않습니다. CSS는 모양, -->
+<!-- JavaScript는 클릭/요청 동작을 맡습니다. -->
 <html lang="ko">
+  <!-- 화면에 직접 보이지 않는 문서 정보와 스타일/라이브러리를 연결합니다. viewport는 모바일 화면 폭에 맞추는 -->
+  <!-- 설정입니다. -->
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,11 +16,15 @@
     </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <!-- 스크립트는 적힌 순서대로 연결됩니다. 공통 설정/도구를 먼저 읽고 페이지 전용 코드가 이를 사용합니다. -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js">
     </script>
+    <!-- 스크립트는 적힌 순서대로 연결됩니다. 공통 설정/도구를 먼저 읽고 페이지 전용 코드가 이를 사용합니다. -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js">
     </script>
   </head>
+  <!-- 브라우저에 실제로 표시되는 영역입니다. 아래 id를 바꾸면 해당 요소를 찾는 JavaScript도 함께 확인해야 -->
+  <!-- 합니다. -->
   <body data-page="logs">
     <a class="skip-link" href="#mainContent">
       본문으로 바로가기
@@ -22,6 +32,7 @@
     <div class="app-shell">
       <button class="sidebar-backdrop" onclick="toggleSidebar(false)" aria-label="작업 공간 메뉴 닫기">
       </button>
+      <!-- 옆 메뉴입니다. 작은 화면에서는 접어서 메뉴 버튼으로 열고 닫습니다. -->
       <aside class="sidebar" id="sidebar" aria-label="작업 공간 메뉴">
         <a class="brand" href="index.html" aria-label="현장노트 홈">
           <span class="brand-mark" aria-hidden="true">
@@ -39,6 +50,7 @@
         <div class="workspace-label">
           나의 작업 공간
         </div>
+        <!-- 관련 화면/계정으로 이동하는 메뉴입니다. aria-label은 보조기기에 메뉴의 의미를 알려 줍니다. -->
         <nav class="rail-nav" aria-label="주 메뉴">
           <a class="rail-link " href="index.html" >
             <i class="fa-regular fa-comment" aria-hidden="true">
@@ -66,6 +78,7 @@
         </div>
       </aside>
       <div class="main-column">
+        <!-- 상단 안내와 계정 메뉴입니다. 로그인 정보에 맞춰 JavaScript가 authNav 내용을 채웁니다. -->
         <header class="topbar">
           <button class="icon-button mobile-menu" onclick="toggleSidebar()" aria-label="작업 공간 메뉴 열기" aria-expanded="false" aria-controls="sidebar">
             <i class="fa-solid fa-bars" aria-hidden="true">
@@ -82,9 +95,11 @@
               대화 기록
             </strong>
           </div>
+          <!-- 관련 화면/계정으로 이동하는 메뉴입니다. aria-label은 보조기기에 메뉴의 의미를 알려 줍니다. -->
           <nav id="authNav" class="auth-nav" aria-label="계정 메뉴">
           </nav>
         </header>
+        <!-- 이 화면의 핵심 작업 영역입니다. 로그인/채팅/기록 중 해당 페이지의 기능을 담습니다. -->
         <main id="mainContent" class="page-scroll">
           <div class="records-page">
             <div class="page-heading">
@@ -181,6 +196,8 @@
                     <label class="sr-only" for="logSearch">
                       현재 페이지의 기록 검색
                     </label>
+                    <!-- name/id/type과 길이 조건이 입력의 역할을 정합니다. 브라우저 검사에 더해 -->
+                    <!-- 서버에서도 같은 조건을 검사합니다. -->
                     <input id="logSearch" type="search" placeholder="현재 페이지의 질문·답변 검색" oninput="renderLogs()">
                   </div>
                   <label class="sr-only" for="statusFilter">
@@ -203,6 +220,7 @@
                 </div>
               </div>
               <div class="table-scroll">
+                <!-- 기록을 행/열로 표시합니다. th는 열 제목이고 tbody에 JS가 기록 행을 넣습니다. -->
                 <table class="records-table">
                   <thead>
                     <tr>
@@ -216,9 +234,6 @@
                         일시
                       </th>
                       <th scope="col" class="desktop-column">
-                        대화
-                      </th>
-                      <th scope="col" class="desktop-column">
                         응답 시간
                       </th>
                       <th scope="col">
@@ -228,7 +243,7 @@
                   </thead>
                   <tbody id="logsTableBody">
                     <tr>
-                      <td colspan="6" class="loading-state">
+                      <td colspan="5" class="loading-state">
                         기록을 불러오는 중…
                       </td>
                     </tr>
@@ -265,7 +280,9 @@
         </main>
       </div>
     </div>
+    <!-- 전체 기록을 보여 주는 대화상자입니다. 평소에는 닫혀 있고 JS의 showModal로 엽니다. -->
     <dialog id="logDetail" class="detail-dialog">
+      <!-- 상단 안내와 계정 메뉴입니다. 로그인 정보에 맞춰 JavaScript가 authNav 내용을 채웁니다. -->
       <header class="detail-header">
         <div>
           <h2 id="detailTitle">
@@ -284,12 +301,16 @@
     </dialog>
     <div id="toast-container" class="toast-container" role="status" aria-live="polite">
     </div>
+    <!-- 스크립트는 적힌 순서대로 연결됩니다. 공통 설정/도구를 먼저 읽고 페이지 전용 코드가 이를 사용합니다. -->
     <script src="js/config.js">
     </script>
+    <!-- 스크립트는 적힌 순서대로 연결됩니다. 공통 설정/도구를 먼저 읽고 페이지 전용 코드가 이를 사용합니다. -->
     <script src="js/api.js">
     </script>
+    <!-- 스크립트는 적힌 순서대로 연결됩니다. 공통 설정/도구를 먼저 읽고 페이지 전용 코드가 이를 사용합니다. -->
     <script src="js/ui.js">
     </script>
+    <!-- 스크립트는 적힌 순서대로 연결됩니다. 공통 설정/도구를 먼저 읽고 페이지 전용 코드가 이를 사용합니다. -->
     <script src="js/logs.js">
     </script>
   </body>
