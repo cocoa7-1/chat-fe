@@ -1754,3 +1754,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .composer-hint {
   color:#7f8d73
 }
+/* 입력창 위의 작은 설정 영역입니다. 좁은 화면에서는 선택 요소가 다음 줄로 흐릅니다. */
+.ai-settings { padding: 10px 12px; font-size: 12px; }
+.ai-settings[hidden] { display: none; }
+.ai-settings select, .ai-settings input[type="number"] { padding: 5px; max-width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #1e293b; }
+.ai-settings > select { margin: 0 12px 6px 4px; }
+.ai-settings details { margin-top: 6px; }
+.ai-settings summary { cursor: pointer; }
+.ai-advanced { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.ai-advanced input { width: 120px; }
+.ai-option-note { margin: 6px 0 0; color: #64748b; line-height: 1.5; }

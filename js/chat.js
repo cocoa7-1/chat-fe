@@ -6,13 +6,69 @@
  * buffer/decoder로 이어 붙입니다.
  */
 let currentSessionId = null, isStreaming = false, sessionRequestId = 0, selectionRequestId = 0;
+let aiModelConfig = null;
 // DOMContentLoaded는 HTML 요소가 준비됐다는 사건입니다. 화살표 함수 (() => ...)는 그때 실행할
 // 작업을 전달합니다.
 document.addEventListener('DOMContentLoaded', () => {
     if (!setupNavbar(true)) return;
     loadSessions();
+    loadAIModels();
     document.getElementById('chatInput').focus();
 });
+
+/** 서버의 모델 목록·기본값을 읽습니다. 구버전 서버에서는 기존 기본 모델 전송 방식을 유지합니다. */
+async function loadAIModels() {
+    try {
+        const response = await apiRequest('/api/v1/chat/models');
+        if (!response.ok) return;
+        const config = await response.json();
+        if (!config.models?.some(model => model.id === config.default_model)) return;
+        aiModelConfig = config;
+        const select = document.getElementById('modelSelect');
+        select.replaceChildren(...config.models.map(model => new Option(model.label, model.id)));
+        select.value = config.default_model;
+        document.getElementById('searchEnabled').checked = config.search_enabled;
+        updateModelOptions();
+        document.getElementById('aiSettings').hidden = false;
+        setAISettingsDisabled(isStreaming);
+    } catch { /* 목록을 받지 못해도 기존 채팅은 서버 기본값으로 사용할 수 있습니다. */ }
+}
+
+/** 모델 변경 시 지원하지 않는 이전 추론 선택은 기본값으로 되돌립니다. */
+function updateModelOptions() {
+    const model = aiModelConfig?.models.find(item => item.id === document.getElementById('modelSelect').value);
+    const select = document.getElementById('thinkingSelect'), previous = select.value;
+    const labels = {minimal:'최소 / Gemma 추론 끄기',low:'낮음',medium:'중간',high:'높음'};
+    select.replaceChildren(new Option('모델 기본값', ''), ...(model?.thinking_levels || []).map(level => new Option(labels[level], level)));
+    if (model?.thinking_levels.includes(previous)) select.value = previous;
+    document.getElementById('temperatureInput').value = '';
+}
+
+/** 사용자가 조정한 옵션을 비워 모델 기본값으로 돌아갑니다. 검색 선택은 별도로 유지합니다. */
+function resetAIOptions() {
+    document.getElementById('temperatureInput').value = '';
+    document.getElementById('thinkingSelect').value = '';
+}
+
+/** 입력값을 요청별 객체로 복사합니다. 숫자가 범위를 벗어나면 질문을 지우거나 전송하기 전에 알립니다. */
+function getAIRequestOptions() {
+    if (!aiModelConfig) return {};
+    const input = document.getElementById('temperatureInput');
+    if (!input.checkValidity()) throw new Error('Temperature는 0~2 사이의 숫자로 입력해 주세요.');
+    const options = {
+        model: document.getElementById('modelSelect').value,
+        search_enabled: document.getElementById('searchEnabled').checked,
+    };
+    if (input.value !== '') options.temperature = Number(input.value);
+    const thinking = document.getElementById('thinkingSelect').value;
+    if (thinking) options.thinking_level = thinking;
+    return options;
+}
+
+/** 답변 중 설정을 잠가 화면 선택과 이미 전송한 요청이 어긋나지 않게 합니다. */
+function setAISettingsDisabled(disabled) {
+    document.querySelectorAll('#aiSettings input,#aiSettings select,#aiSettings button').forEach(item => item.disabled = disabled);
+}
 /**
  * 입력 길이에 맞게 높이와 글자 수를 갱신합니다. scrollHeight는 내용 전체를 담는 데 필요한 높이입니다.
  */
@@ -180,6 +236,7 @@ function finishStreamingBubble(id,text,latency,status) {
  * 답변 수신 중 입력·대화 변경·삭제 버튼을 잠급니다. 같은 연결 중 대화를 바꾸어 답변이 섞이는 것을 막습니다.
  */
 function setStreamingState(streaming) {
+    setAISettingsDisabled(streaming);
     isStreaming = streaming;
     const button = document.getElementById('sendBtn');
     button.disabled = streaming;
@@ -198,6 +255,9 @@ async function handleChatSubmit(event) {
     if (isStreaming) return;
     const input = document.getElementById('chatInput'), message = input.value.trim();
     if (!message) return;
+    let aiOptions;
+    try { aiOptions = getAIRequestOptions(); }
+    catch (error) { showErrorBanner(error.message); return; }
     ++selectionRequestId;
     input.value = ''; autoResizeTextarea(input);
     document.getElementById('welcomeHero')?.remove();
@@ -210,9 +270,13 @@ async function handleChatSubmit(event) {
         const headers = {'Content-Type':'application/json'}, token = getToken();
         if (token) headers.Authorization = 'Bearer '+token;
         const response = await fetch(getApiUrl('/api/v1/chat/stream'),{
-            method:'POST',headers,body:JSON.stringify({message,session_id:currentSessionId})
+            method:'POST',headers,body:JSON.stringify({message,session_id:currentSessionId,...aiOptions})
         });
         if (response.status===401) { removeToken(); window.location.href='login.html'; throw new Error('다시 로그인해 주세요.'); }
+        if (response.status===429) {
+            const retryAfter = Number(response.headers.get('Retry-After'));
+            throw new Error(retryAfter > 0 ? '요청이 많습니다. 약 '+Math.ceil(retryAfter)+'초 뒤 다시 시도해 주세요.' : '요청이 많습니다. 잠시 후 다시 시도해 주세요.');
+        }
         if (!response.ok) throw new Error('요청을 처리하지 못했습니다. (HTTP '+response.status+')');
         // body는 아직 내려오는 응답의 통로입니다. reader는 조각을 읽고 TextDecoder는 나뉘어 도착한
         // UTF-8 바이트를 글자로 이어 줍니다.
