@@ -1756,7 +1756,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 /* 입력창 도구 모음: 선택은 작은 알약 모양, 검색은 눌림 상태와 스위치로 표시합니다. */
 .composer-bottom { align-items:flex-end; gap:8px; }
-.composer-tools { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; }
+.composer-tools { position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; }
 .composer-tools[hidden] { display:none; }
 .tool-select,.search-toggle-face,.generation-settings summary { display:flex; align-items:center; gap:6px; height:32px; padding:0 9px; border:1px solid var(--line); border-radius:10px; background:#f8f9f6; color:var(--ink); font-size:11px; }
 .tool-select { position:relative; max-width:210px; }
@@ -1771,14 +1771,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .search-toggle input:checked + .search-toggle-face .switch-track { background:var(--green); }
 .search-toggle input:checked + .search-toggle-face .switch-track::after { transform:translateX(9px); }
 .composer-tools :disabled { opacity:.55; cursor:wait; }
-.generation-settings { position:relative; }
+/* 줄바꿈된 버튼 대신 도구 모음 전체를 기준으로 패널을 화면 안에 배치합니다. */
+.generation-settings { position:static; }
 .generation-settings summary { cursor:pointer; list-style:none; }
 .generation-settings summary::-webkit-details-marker { display:none; }
-.generation-panel { position:absolute; bottom:42px; right:0; width:250px; max-width:calc(100vw - 40px); background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 12px 40px #142e2520; z-index:30; font-size:12px; }
+.generation-panel { position:absolute; bottom:calc(100% + 10px); right:0; width:250px; max-width:100%; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 12px 40px #142e2520; z-index:30; font-size:12px; }
 .generation-panel label { display:flex; flex-direction:column; gap:4px; margin:14px 0 8px; }
 .generation-panel label span,.generation-panel p { font-size:10px; color:var(--muted); line-height:1.6; }
 .generation-panel input { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; color:var(--ink); background:var(--paper); }
 .generation-panel button { margin-top:8px; color:var(--green); font-size:11px; }
 .search-result-status { font-size:10px; color:var(--muted); margin-top:10px; }
 .search-suggestions { width:100%; height:90px; border:0; margin-top:8px; border-radius:10px; background:#fff; }
-@media(max-width:520px) { .model-picker { max-width:158px; } .model-picker select { max-width:110px; } .composer-tools { gap:5px; } .tool-select,.search-toggle-face { font-size:10px; padding-inline:7px; } .generation-panel { right:-40px; } .send-controls .char-counter { display:none; } }
+@media(max-width:520px) { .model-picker { max-width:158px; } .model-picker select { max-width:110px; } .composer-tools { gap:5px; } .tool-select,.search-toggle-face { font-size:10px; padding-inline:7px; } .send-controls .char-counter { display:none; } }
