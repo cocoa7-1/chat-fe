@@ -400,24 +400,6 @@
             </div>
           </template>
           <div class="composer-wrap">
-            <!-- 모델 목록과 지원하는 추론 수준은 서버에서 받아 화면과 입력 검사를 맞춥니다. -->
-            <div id="aiSettings" class="ai-settings" hidden>
-              <label for="modelSelect">모델</label>
-              <select id="modelSelect" onchange="updateModelOptions()"></select>
-              <label class="search-choice"><input id="searchEnabled" type="checkbox"> 웹 검색 허용</label>
-              <details>
-                <summary>고급 설정</summary>
-                <div class="ai-advanced">
-                  <label for="temperatureInput">Temperature</label>
-                  <input id="temperatureInput" type="number" min="0" max="2" step="0.1" placeholder="모델 기본값">
-                  <label for="thinkingSelect">추론 수준</label>
-                  <select id="thinkingSelect"></select>
-                  <button type="button" onclick="resetAIOptions()">기본값으로</button>
-                </div>
-                <p class="ai-option-note">Temperature가 높으면 답변 표현이 다양해집니다. 추론 수준이 높으면 응답이 느려질 수 있습니다. 빈 값은 모델 기본값을 사용합니다.</p>
-              </details>
-              <p class="ai-option-note">설정은 다음 질문부터 적용됩니다. 검색 허용은 실제 검색 실행을 보장하지 않습니다. 모델별 사용량 한도가 다릅니다.</p>
-            </div>
             <div id="errorBanner" class="error-banner hidden" role="alert">
               <span id="errorBannerText">
               </span>
@@ -434,9 +416,35 @@
               </label>
               <textarea id="chatInput" rows="1" maxlength="2000" required placeholder="궁금한 건설 지식, 편하게 물어보세요." oninput="autoResizeTextarea(this)" onkeydown="handleKeyDown(event)"></textarea>
               <div class="composer-bottom">
-                <span class="composer-hint">
-                  Enter로 전송 · Shift + Enter로 줄바꿈
-                </span>
+                <!-- 선택 컨트롤을 입력창 안에 붙이고 지원 목록은 서버에서 가져옵니다. -->
+                <div id="aiSettings" class="composer-tools" hidden>
+                  <label class="tool-select model-picker" title="답변 모델">
+                    <i class="fa-solid fa-cube" aria-hidden="true"></i>
+                    <span class="sr-only">모델</span>
+                    <select id="modelSelect" aria-label="답변 모델" onchange="updateModelOptions()"></select>
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                  </label>
+                  <label class="tool-select reasoning-picker" title="추론 강도">
+                    <i class="fa-solid fa-brain" aria-hidden="true"></i>
+                    <span class="sr-only">추론 강도</span>
+                    <select id="thinkingSelect" aria-label="추론 강도"></select>
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                  </label>
+                  <label class="search-toggle" title="웹 검색 켜기/끄기">
+                    <input id="searchEnabled" type="checkbox" role="switch" aria-label="웹 검색">
+                    <span class="search-toggle-face"><i class="fa-solid fa-globe" aria-hidden="true"></i><span>검색</span><span class="switch-track" aria-hidden="true"></span></span>
+                  </label>
+                  <details id="generationSettings" class="generation-settings">
+                    <summary aria-label="생성 옵션" title="생성 옵션"><i class="fa-solid fa-sliders" aria-hidden="true"></i></summary>
+                    <div class="generation-panel">
+                      <strong>생성 옵션</strong>
+                      <label for="temperatureInput">Temperature <span>답변 표현의 다양성</span></label>
+                      <input id="temperatureInput" type="number" min="0" max="2" step="0.1" placeholder="기본값">
+                      <p>낮으면 일관된 표현, 높으면 다양한 표현을 사용합니다. 추론 강도를 높이면 응답이 느려질 수 있습니다.</p>
+                      <button type="button" onclick="resetAIOptions()">기본값으로</button>
+                    </div>
+                  </details>
+                </div>
                 <div class="send-controls">
                   <span id="charCounter" class="char-counter">
                     0 / 2000

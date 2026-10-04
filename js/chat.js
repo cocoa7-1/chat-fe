@@ -38,16 +38,18 @@ async function loadAIModels() {
 function updateModelOptions() {
     const model = aiModelConfig?.models.find(item => item.id === document.getElementById('modelSelect').value);
     const select = document.getElementById('thinkingSelect'), previous = select.value;
-    const labels = {minimal:'최소 / Gemma 추론 끄기',low:'낮음',medium:'중간',high:'높음'};
-    select.replaceChildren(new Option('모델 기본값', ''), ...(model?.thinking_levels || []).map(level => new Option(labels[level], level)));
-    if (model?.thinking_levels.includes(previous)) select.value = previous;
+    const gemma = model?.id.startsWith('gemma');
+    const labels = {minimal:gemma?'추론 끔':'최소',low:'낮음',medium:'중간',high:gemma?'추론 켬':'높음'};
+    select.replaceChildren(...(model?.thinking_levels || []).map(level => new Option(labels[level], level)));
+    select.value = model?.thinking_levels.includes(previous) ? previous : (model?.default_thinking || model?.thinking_levels[0] || '');
     document.getElementById('temperatureInput').value = '';
 }
 
 /** 사용자가 조정한 옵션을 비워 모델 기본값으로 돌아갑니다. 검색 선택은 별도로 유지합니다. */
 function resetAIOptions() {
     document.getElementById('temperatureInput').value = '';
-    document.getElementById('thinkingSelect').value = '';
+    const model = aiModelConfig?.models.find(item => item.id === document.getElementById('modelSelect').value);
+    document.getElementById('thinkingSelect').value = model?.default_thinking || model?.thinking_levels[0] || '';
 }
 
 /** 입력값을 요청별 객체로 복사합니다. 숫자가 범위를 벗어나면 질문을 지우거나 전송하기 전에 알립니다. */
@@ -275,7 +277,9 @@ async function handleChatSubmit(event) {
         if (response.status===401) { removeToken(); window.location.href='login.html'; throw new Error('다시 로그인해 주세요.'); }
         if (response.status===429) {
             const retryAfter = Number(response.headers.get('Retry-After'));
-            throw new Error(retryAfter > 0 ? '요청이 많습니다. 약 '+Math.ceil(retryAfter)+'초 뒤 다시 시도해 주세요.' : '요청이 많습니다. 잠시 후 다시 시도해 주세요.');
+            const errorData = await response.json().catch(()=>({}));
+            const detail = typeof errorData.detail === 'string' ? errorData.detail : '요청이 많습니다.';
+            throw new Error(detail + (retryAfter > 0 ? ' 약 '+Math.ceil(retryAfter)+'초 뒤 다시 시도할 수 있어요.' : ' 잠시 후 다시 시도해 주세요.'));
         }
         if (!response.ok) throw new Error('요청을 처리하지 못했습니다. (HTTP '+response.status+')');
         // body는 아직 내려오는 응답의 통로입니다. reader는 조각을 읽고 TextDecoder는 나뉘어 도착한
@@ -301,6 +305,7 @@ async function handleChatSubmit(event) {
                 loadSessions();
             } else if (type==='done') {
                 finished = true; finishStreamingBubble(bubbleId,fullText,value.latency_ms,value.status);
+                renderSearchResult(bubbleId,value.search,value.search_suggestions);
             } else if (type==='error') { showErrorBanner(value.message || '답변 중 오류가 발생했습니다.'); }
             else if (value.text) { fullText += value.text; updateStreamingBubbleText(bubbleId,fullText); scrollToBottom(); }
         }
@@ -324,6 +329,26 @@ async function handleChatSubmit(event) {
         finishStreamingBubble(bubbleId,fullText || '답변을 받지 못했습니다. 잠시 후 다시 질문해 주세요.',null,'error');
     // 성공/오류와 관계없이 입력 잠금을 풀어 다음 질문을 보낼 수 있게 합니다.
     } finally { setStreamingState(false); input.focus(); loadSessions(); }
+}
+
+/** 검색 설정과 실제 반환된 근거를 구분해 표시합니다. 출처 본문은 DB에 함께 저장됩니다. */
+function renderSearchResult(bubbleId, search, suggestions) {
+    const bubble = document.getElementById(bubbleId);
+    if (!bubble || !search?.requested) return;
+    const content = bubble.querySelector('.message-content') || bubble;
+    const status = document.createElement('div');
+    status.className = 'search-result-status';
+    status.textContent = search.executed ? '웹 검색 확인 · 출처 '+search.source_count+'개' : '이 답변에서 검색 근거가 반환되지 않았어요';
+    content.append(status);
+    if (suggestions) {
+        // 공급자 HTML은 본문 DOM에 넣지 않고 스크립트/동일출처 접근이 막힌 프레임에서 표시합니다.
+        const frame = document.createElement('iframe');
+        frame.className = 'search-suggestions';
+        frame.title = 'Google 검색 제안';
+        frame.setAttribute('sandbox','allow-popups allow-popups-to-escape-sandbox');
+        frame.srcdoc = suggestions;
+        content.append(frame);
+    }
 }
 /**
  * 채팅 화면에 오류 문장을 텍스트로 표시합니다. 서버나 연결 오류를 사용자가 볼 수 있게 합니다.

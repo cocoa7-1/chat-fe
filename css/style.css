@@ -1754,13 +1754,31 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .composer-hint {
   color:#7f8d73
 }
-/* 입력창 위의 작은 설정 영역입니다. 좁은 화면에서는 선택 요소가 다음 줄로 흐릅니다. */
-.ai-settings { padding: 10px 12px; font-size: 12px; }
-.ai-settings[hidden] { display: none; }
-.ai-settings select, .ai-settings input[type="number"] { padding: 5px; max-width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #1e293b; }
-.ai-settings > select { margin: 0 12px 6px 4px; }
-.ai-settings details { margin-top: 6px; }
-.ai-settings summary { cursor: pointer; }
-.ai-advanced { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.ai-advanced input { width: 120px; }
-.ai-option-note { margin: 6px 0 0; color: #64748b; line-height: 1.5; }
+/* 입력창 도구 모음: 선택은 작은 알약 모양, 검색은 눌림 상태와 스위치로 표시합니다. */
+.composer-bottom { align-items:flex-end; gap:8px; }
+.composer-tools { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; }
+.composer-tools[hidden] { display:none; }
+.tool-select,.search-toggle-face,.generation-settings summary { display:flex; align-items:center; gap:6px; height:32px; padding:0 9px; border:1px solid var(--line); border-radius:10px; background:#f8f9f6; color:var(--ink); font-size:11px; }
+.tool-select { position:relative; max-width:210px; }
+.tool-select select { appearance:none; border:0; background:transparent; color:inherit; font:inherit; max-width:160px; cursor:pointer; padding:0; min-width:0; }
+.tool-select .fa-chevron-down { font-size:8px; opacity:.5; pointer-events:none; }
+.tool-select:focus-within,.search-toggle:focus-within,.generation-settings summary:focus-visible { outline:2px solid var(--green); outline-offset:2px; }
+.search-toggle { position:relative; cursor:pointer; }
+.search-toggle input { position:absolute; opacity:0; width:100%; height:100%; margin:0; }
+.switch-track { width:22px; height:13px; background:#cdd3ca; border-radius:20px; position:relative; transition:background .15s; }
+.switch-track::after { content:''; position:absolute; width:9px; height:9px; border-radius:50%; background:#fff; top:2px; left:2px; transition:transform .15s; box-shadow:0 1px 2px #0002; }
+.search-toggle input:checked + .search-toggle-face { background:var(--sage); color:var(--green); border-color:#c7d6c4; }
+.search-toggle input:checked + .search-toggle-face .switch-track { background:var(--green); }
+.search-toggle input:checked + .search-toggle-face .switch-track::after { transform:translateX(9px); }
+.composer-tools :disabled { opacity:.55; cursor:wait; }
+.generation-settings { position:relative; }
+.generation-settings summary { cursor:pointer; list-style:none; }
+.generation-settings summary::-webkit-details-marker { display:none; }
+.generation-panel { position:absolute; bottom:42px; right:0; width:250px; max-width:calc(100vw - 40px); background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 12px 40px #142e2520; z-index:30; font-size:12px; }
+.generation-panel label { display:flex; flex-direction:column; gap:4px; margin:14px 0 8px; }
+.generation-panel label span,.generation-panel p { font-size:10px; color:var(--muted); line-height:1.6; }
+.generation-panel input { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; color:var(--ink); background:var(--paper); }
+.generation-panel button { margin-top:8px; color:var(--green); font-size:11px; }
+.search-result-status { font-size:10px; color:var(--muted); margin-top:10px; }
+.search-suggestions { width:100%; height:90px; border:0; margin-top:8px; border-radius:10px; background:#fff; }
+@media(max-width:520px) { .model-picker { max-width:158px; } .model-picker select { max-width:110px; } .composer-tools { gap:5px; } .tool-select,.search-toggle-face { font-size:10px; padding-inline:7px; } .generation-panel { right:-40px; } .send-controls .char-counter { display:none; } }

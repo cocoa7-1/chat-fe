@@ -1,52 +1,36 @@
 # 현장노트 — 건설 지식 AI 어시스턴트
 
-건설 용어와 시공 원리를 질문하고, 답변과 이전 대화를 다시 확인하는 정적 웹 프론트입니다. 로그인·회원가입, 채팅 세션, SSE 답변, 개인 대화 기록을 FastAPI 백엔드와 연결합니다.
+건설 용어·시공 원리를 질문하고 이전 대화를 조회하는 정적 웹 프론트입니다. 회원가입·로그인, 채팅·실시간답변, 개인 기록 조회를 FastAPI와 연결합니다.
 
-## 실행
+- [서비스](https://b7-1-chat-fe.vercel.app) · [백엔드 저장소](https://github.com/cocoa7-1/chat-be) · [API 문서](https://b71chatbe.ddns.net/docs)
 
-별도 의존성 설치나 빌드 없이 `chat-fe` 폴더에서 정적 웹 서버를 실행합니다.
+## 실행과 설정
 
 ```bash
 python -m http.server 3000
 ```
 
-http://localhost:3000 에 접속합니다. 로컬 백엔드는 http://localhost:8000 에서 실행합니다.
+http://localhost:3000 에 접속합니다. 로컬 BE는 http://localhost:8000 입니다. 별도 빌드/설치는 필요 없습니다.
 
-## 화면과 구성
+js/config.js는 localhost와 배포주소를 구분합니다. DEPLOYED_API_BASE_URL은 백엔드HTTPS주소이며 /api/v1은 포함하지 않습니다. 정적 파일이므로 Vercel환경변수가 아닌 코드설정에 반영합니다. AI키·DB연결정보는 백엔드에서 관리합니다.
 
-모델 설정은 로그인 후 서버의 `/api/v1/chat/models`에서 목록과 기본값을 받아 표시합니다. 구버전 서버에서 목록을 못 받으면 기존 채팅을 서버 기본값으로 사용할 수 있습니다. 설정은 다음 질문부터 적용되고, 모델을 바꾸면 temperature를 기본값으로 되돌리며 지원하지 않는 이전 추론 수준을 제거합니다. 답변 중에는 설정을 잠급니다. 새로고침하면 서버 기본값으로 돌아갑니다. 모델별 무료 한도와 실제 검색 실행은 UI 옵션만으로 확인되지 않습니다.
+## 화면과 파일
 
-- `index.html`: 최근 대화, 건설 주제 질문, 실시간 답변과 답변 복사, 모델·웹 검색 선택과 접을 수 있는 고급 설정(temperature·모델별 추론 수준).
-- `logs.html`: 전체 질문·대화 통계, 상태 필터, 현재 페이지 검색, 50개 단위 페이지 이동, 질문·답변 전체 내용 보기.
-- `login.html` / `register.html`: 계정 인증, 닉네임 입력, 비밀번호 확인·표시.
-- `css/style.css`: 밝은 종이색과 녹색의 공통 디자인, 모바일 메뉴, 키보드 포커스, 모션 감소 설정.
-- `js/config.js`: 로컬·배포 API 주소 선택.
-- `js/api.js` / `js/auth.js`: 기존 JWT 인증과 가입·로그인 요청.
-- `js/ui.js`: 공통 UI, 시간 표시, Markdown 정제.
-- `js/chat.js` / `js/logs.js`: 세션·SSE와 개인 기록 조회.
+| 화면 / 파일 | 역할 |
+|---|---|
+| index.html / js/chat.js | 대화목록·질문·SSE말풍선·복사, 입력창 모델/추론선택·검색스위치·생성옵션 |
+| logs.html / js/logs.js | 내 기록·전체통계·현재페이지 검색·필터·페이지네이션·상세 |
+| login.html / register.html | 로그인·닉네임가입·비밀번호조건/확인 |
+| js/api.js / js/auth.js | JWT 저장과 Bearer 인증 요청 |
+| js/ui.js | Markdown정제·공통UI·시간표시 |
+| css/style.css | 데스크톱/모바일·초점·모션 설정 |
 
-Vanilla HTML/CSS/JavaScript를 사용합니다. 빌드 의존성은 없습니다. 글꼴·Font Awesome·Marked 12.0.2·DOMPurify 3.4.16은 CDN에서 로드합니다. Markdown 라이브러리를 사용할 수 없으면 답변을 이스케이프한 일반 텍스트로 표시합니다. 서버에서 생성된 Markdown은 HTML로 변환한 뒤 정제합니다.
+모델을 선택하면 지원하는 추론 수준이 동적으로 바뀝니다. 답변 중에는 설정을 잠그고 다음 질문부터 적용합니다. 검색 출처는 답변에, 검색 실행 상태와 제안은 말풍선 하단에 표시합니다. 요청·모델할당량 오류는 대기시간과 함께 안내합니다.
 
-## 백엔드 연결
+Markdown은 Marked/DOMPurify로 정제합니다. 관련 CDN을 사용할 수 없으면 일반 텍스트로 표시합니다. 인증토큰은 주소별 localStorage에 저장되며 서버가 실제 인증을 검사합니다.
 
-`js/config.js`는 localhost·127.0.0.1·IPv6 loopback에서 로컬 API를 사용하고, 외부 배포에서는 다음 주소를 사용합니다.
+## 배포와 검증
 
-```javascript
-const DEPLOYED_API_BASE_URL = 'https://b71chatbe.ddns.net';
-```
+Vercel에서 Framework Other, 빌드 없음, Output루트(.)로 배포합니다. Production 추적브랜치는 dev/log-frontend-integration 입니다. 커밋·푸시하면 연결된 배포가 실행됩니다.
 
-끝에 `/api/v1`을 붙이지 않습니다. 정적 JS이므로 Vercel 환경 변수만 입력해서 이 값이 바뀌지는 않습니다. API 키와 JWT 서명 키는 EC2 백엔드에만 둡니다.
-
-회원가입은 `{ username, nickname, password }`, 로그인은 `{ username, password }`를 전송합니다. 아이디는 3~30자, 닉네임은 1~30자, 비밀번호는 8~100자입니다. 인증 토큰은 기존 저장 키 `chat_access_token`을 유지하고 API 요청에 Bearer 헤더로 전달합니다. 로그 검색·질문/답변 탭은 현재 페이지를 대상으로 하며, 상태 필터·페이지 이동은 서버 API를 사용합니다. 통계는 `/api/v1/logs/stats`의 전체 계정 통계를 사용합니다.
-
-## 배포와 협업
-
-- 프론트 Production: https://b7-1-chat-fe.vercel.app
-- 백엔드 HTTPS: https://b71chatbe.ddns.net
-- Vercel: 개인 Hobby, Framework Other, 저장소 루트, 빌드 없음, Output `.`.
-- 현재 Production 추적 브랜치: `dev/log-frontend-integration`. 해당 브랜치에 푸시하면 자동 배포될 수 있습니다.
-- 팀 합의: 개인 작업 브랜치에서 수정 후 `develop` 대상 PR을 만들고 감독 `dolphin1404`를 리뷰어로 지정합니다. `develop → main` 병합은 감독이 수행합니다.
-
-2026-10-04 기존 배포 `6fd410e`의 공개 파일과 CORS를 Codex가 확인했습니다. 이후 사용자가 가입·로그인·Demo 질문·로그 재조회, 서버 키 입력 후 실제 AI 답변과 후속 질문 문맥·로그 화면을 확인했습니다. 이번 화면 개편의 브라우저 검증은 격리된 로컬 데이터로 수행합니다. 재배포 뒤 실제 서버 회귀 확인과 구분합니다.
-
-화면 예시와 리뷰 안내는 [UI 리뷰 안내](docs/ui-review.md)를 참고하세요.
+검증: 로그인/가입입력, 모델별옵션전환, SSE완료/오류, 기록필터·상세·페이지이동, 390px모바일 가로넘침/키보드접근을 확인합니다. [UI 안내](docs/ui-review.md)와 [백엔드 미션 점검표](https://github.com/cocoa7-1/chat-be/blob/dev/log-mission-docs/docs/mission-checklist.md)를 참고하세요.
