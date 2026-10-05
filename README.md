@@ -31,6 +31,16 @@ Markdown은 Marked/DOMPurify로 정제합니다. 관련 CDN을 사용할 수 없
 
 ## 배포와 검증
 
-Vercel에서 Framework Other, 빌드 없음, Output루트(.)로 배포합니다. Production 추적브랜치는 dev/log-frontend-integration 입니다. 커밋·푸시하면 연결된 배포가 실행됩니다.
+Vercel에서 Framework Other, 빌드 없음, Output루트(.)로 배포합니다. 최종 Production 기준은 main입니다. 개인 작업을 develop 대상 PR로 취합한 뒤 develop → main PR을 merge commit으로 병합하고, main의 Production 배포 성공과 서비스 도메인의 파일 일치를 확인합니다. 모델·추론·생성 옵션 패널의 모바일 폭 제한과 도구 모음 기준 배치를 포함합니다.
 
-검증: 로그인/가입입력, 모델별옵션전환, SSE완료/오류, 기록필터·상세·페이지이동, 390px모바일 가로넘침/키보드접근을 확인합니다. [UI 안내](docs/ui-review.md)와 [백엔드 미션 점검표](https://github.com/cocoa7-1/chat-be/blob/dev/log-mission-docs/docs/mission-checklist.md)를 참고하세요.
+검증: 로그인/가입입력, 모델별옵션전환, SSE완료/오류, 기록필터·상세·페이지이동, 390px모바일 가로넘침/키보드접근을 확인합니다. [UI 안내](docs/ui-review.md)와 [백엔드 미션 점검표](https://github.com/cocoa7-1/chat-be/blob/main/docs/mission-checklist.md)를 참고하세요. 실제 AI·후속 문맥·저장된 기록은 운영 시연에서 별도로 확인합니다.
+
+## 팀 역할과 개인별 작업 요약
+
+| 작성자 / 역할 | 작업 요약 |
+|---|---|
+| feelosophysics (alzznd) / FE 구현·통합 | 초기 정적 클라이언트, 인증·API 연동, 현장노트 UI, 모델·추론·검색·Temperature 옵션, 오류/출처 표시, 모바일 팝오버와 배포 문서 |
+| dolphin1404 (Kyumin Lee) / 감독 | PR 템플릿 작성, 리뷰·통합 관리 담당 |
+| bwmin / BE 인증 | 닉네임·비밀번호 정책과 변경 API 및 테스트. FE는 해당 API와 연결 |
+
+alzznd와 feelosophysics는 같은 작성자입니다. BE 인증·DB·AI의 구현과 실행 환경 변수는 [BE README](https://github.com/cocoa7-1/chat-be/blob/main/README.md), DB 확인은 [로그 가이드](https://github.com/cocoa7-1/chat-be/blob/main/docs/roles/log_db_guide.md)를 참고하세요.
